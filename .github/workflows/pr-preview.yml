@@ -1,0 +1,135 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build with PR-specific base path
+        run: pnpm build --base=/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-preview-${{ github.event.pull_request.number }}
+          path: dist/
+          retention-days: 3
+
+  deploy:
+    name: Deploy Preview
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
+    environment:
+      name: pr-${{ github.event.pull_request.number }}
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-preview-${{ github.event.pull_request.number }}
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          target-folder: pr-${{ github.event.pull_request.number }}
+          clean: true
+          single-commit: true
+
+  notify:
+    name: Notify PR
+    needs: deploy
+    if: always() && needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Wait for Pages to publish
+        run: |
+          PREVIEW_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/"
+          echo "Waiting for ${PREVIEW_URL} to become available..."
+
+          for i in $(seq 1 15); do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' -L "${PREVIEW_URL}")
+            if [ "$STATUS" = "200" ]; then
+              echo "Preview is live (attempt ${i})"
+              exit 0
+            fi
+            echo "Attempt ${i}/15: got HTTP ${STATUS}, retrying in 20s..."
+            sleep 20
+          done
+
+          echo "::warning::Preview URL did not return 200 after 15 attempts. Posting comment anyway."
+
+      - name: Post or update preview comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.payload.pull_request.head.sha;
+            const previewUrl = `https://${owner}.github.io/${repo}/pr-${prNumber}/`;
+            const marker = '<!-- pr-preview-bot -->';
+            const body = [
+              marker,
+              '## PR Preview',
+              '',
+              `Preview deployment is ready!`,
+              '',
+              `**Preview URL:** ${previewUrl}`,
+              '',
+              '---',
+              `*Last deployed: ${sha}*`
+            ].join('\n');
+
+            const comments = await github.rest.issues.listComments({
+              owner, repo, issue_number: prNumber, per_page: 100
+            });
+            const existing = comments.data.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: prNumber, body
+              });
+            }
