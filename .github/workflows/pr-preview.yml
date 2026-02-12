@@ -36,9 +36,6 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Disable Jekyll
-        run: touch dist/.nojekyll
-
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -74,6 +71,17 @@ jobs:
           target-folder: pr-${{ github.event.pull_request.number }}
           clean: true
           single-commit: true
+
+      - name: Ensure .nojekyll at gh-pages root
+        run: |
+          git fetch origin gh-pages
+          git checkout gh-pages
+          if [ ! -f .nojekyll ]; then
+            touch .nojekyll
+            git add .nojekyll
+            git commit -m "Add .nojekyll to disable Jekyll processing"
+            git push origin gh-pages
+          fi
 
   notify:
     name: Notify PR
