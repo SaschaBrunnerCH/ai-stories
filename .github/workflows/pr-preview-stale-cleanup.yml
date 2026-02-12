@@ -1,0 +1,80 @@
+name: PR Preview Stale Cleanup
+
+on:
+  schedule:
+    - cron: '0 3 * * 0' # Sunday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  stale-cleanup:
+    name: Remove Stale Previews
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 1
+
+      - name: Find and remove stale PR previews
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          STALE_DIRS=""
+
+          for dir in pr-*/; do
+            [ -d "$dir" ] || continue
+            PR_NUMBER="${dir#pr-}"
+            PR_NUMBER="${PR_NUMBER%/}"
+
+            STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "ERROR")
+
+            if [ "$STATE" = "ERROR" ]; then
+              echo "::warning::Could not determine state of PR #${PR_NUMBER}, skipping"
+              continue
+            fi
+
+            if [ "$STATE" != "OPEN" ]; then
+              echo "PR #${PR_NUMBER} is ${STATE} — marking pr-${PR_NUMBER} for removal"
+              STALE_DIRS="${STALE_DIRS} pr-${PR_NUMBER}"
+            else
+              echo "PR #${PR_NUMBER} is OPEN — keeping pr-${PR_NUMBER}"
+            fi
+          done
+
+          if [ -z "$STALE_DIRS" ]; then
+            echo "No stale preview directories found"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          for dir in $STALE_DIRS; do
+            git rm -rf "$dir"
+          done
+
+          git commit -m "chore: remove stale PR preview directories"
+
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Push succeeded (attempt ${attempt})"
+              exit 0
+            fi
+            echo "Push failed (attempt ${attempt}/3), pulling and retrying..."
+            sleep $(( attempt * 5 ))
+            git pull --rebase
+          done
+
+          echo "::error::Failed to push stale cleanup after 3 attempts"
+          exit 1

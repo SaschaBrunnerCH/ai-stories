@@ -1,0 +1,54 @@
+name: PR Preview Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Remove Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 1
+        continue-on-error: true
+
+      - name: Remove PR preview directory
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          if [ ! -d "pr-${PR_NUMBER}" ]; then
+            echo "No preview directory found for PR #${PR_NUMBER}, skipping cleanup"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git rm -rf "pr-${PR_NUMBER}"
+          git commit -m "chore: remove PR #${PR_NUMBER} preview"
+
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Push succeeded (attempt ${attempt})"
+              exit 0
+            fi
+            echo "Push failed (attempt ${attempt}/3), pulling and retrying..."
+            sleep $(( attempt * 5 ))
+            git pull --rebase
+          done
+
+          echo "::error::Failed to push cleanup after 3 attempts"
+          exit 1
