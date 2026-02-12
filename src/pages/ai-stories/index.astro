@@ -1,0 +1,61 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import FilterableGrid from "../../components/islands/FilterableGrid";
+
+let entries: CollectionEntry<"aiStories">[] = [];
+try {
+  entries = await getCollection("aiStories");
+} catch {
+  entries = [];
+}
+
+// Sort entries by created date (newest first)
+const sortedEntries = [...entries].sort(
+  (a, b) => b.data.created.getTime() - a.data.created.getTime()
+);
+
+// Compute tag counts locally to avoid fetching all entries separately
+const tagCounts = sortedEntries.reduce<Record<string, number>>((acc, entry) => {
+  entry.data.tags.forEach((tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+  });
+  return acc;
+}, {});
+
+const allTags = Object.keys(tagCounts).sort();
+
+// Prepare data for client-side component
+const cardData = sortedEntries.map((entry) => ({
+  title: entry.data.title,
+  slug: entry.id,
+  tags: entry.data.tags,
+  icon: entry.data.icon || "📝",
+  created: entry.data.created.toISOString(),
+  author: entry.data.author,
+  description: entry.data.description,
+  tileImage: entry.data.tileImage,
+}));
+---
+
+<BaseLayout title="AI stories">
+  <div class="container mx-auto px-4 py-8">
+    <header class="text-center mb-12">
+      <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">AI stories</h1>
+      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+        A growing collection of real-world AI implementations and learnings.
+      </p>
+
+    </header>
+
+    <FilterableGrid
+      client:load
+      items={cardData}
+      allTags={allTags}
+      tagCounts={tagCounts}
+      variant="technical"
+      basePath="/ai-stories"
+      defaultTileImage="/ai-story-default-tile.svg"
+    />
+  </div>
+</BaseLayout>

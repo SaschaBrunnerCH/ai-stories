@@ -1,0 +1,77 @@
+---
+import { getTagColor } from "../utils/tagUtils";
+import { buildUrl } from "../utils/url";
+
+interface Props {
+  title: string;
+  slug: string;
+  tags: string[];
+  icon: string;
+  created: Date;
+  description?: string;
+  colorIndex?: number;
+  tagCounts?: Record<string, number>;
+}
+
+const { title, slug, tags, icon, created, description, colorIndex = 0, tagCounts = {} } = Astro.props;
+
+const rotationClasses = [
+  "sticky-note-1",
+  "sticky-note-2",
+  "sticky-note-3",
+  "sticky-note-4",
+  "sticky-note-5",
+  "sticky-note-6",
+];
+
+const rotation = rotationClasses[colorIndex % rotationClasses.length];
+
+const formattedDate = created.toLocaleDateString("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+// Sort tags by count (highest first)
+const sortedTags = [...tags].sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0));
+---
+
+<a
+  href={buildUrl(`/ai-stories/${slug}`)}
+  class:list={[
+    "sticky-note card-shadow block p-5 rounded-sm cursor-pointer h-full bg-gray-100 dark:bg-surface-elevated",
+    rotation,
+  ]}
+>
+  <div class="flex items-start gap-2.5 mb-2">
+    <svg class="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />
+    </svg>
+    <h3 class="font-semibold text-gray-800 dark:text-gray-100 line-clamp-2 text-lg leading-tight">
+      {title}
+    </h3>
+  </div>
+
+  {description && (
+    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+      {description}
+    </p>
+  )}
+
+  <div class="flex flex-wrap gap-1.5 mt-auto mb-3">
+    {sortedTags.slice(0, 3).map((tag) => (
+      <span class:list={["text-xs px-2 py-0.5 rounded-full font-medium", getTagColor(tag, tagCounts[tag])]}>
+        {tag}
+      </span>
+    ))}
+    {sortedTags.length > 3 && (
+      <span class="text-xs bg-gray-200 dark:bg-surface-overlay text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full font-medium">
+        +{sortedTags.length - 3}
+      </span>
+    )}
+  </div>
+
+  <time class="text-xs text-gray-600 dark:text-gray-400 block" datetime={created.toISOString()}>
+    {formattedDate}
+  </time>
+</a>

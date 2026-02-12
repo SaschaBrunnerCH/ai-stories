@@ -1,0 +1,108 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Dark surface palette */
+@theme {
+  --color-pastel-yellow: #fff9c4;
+  --color-pastel-pink: #f8bbd0;
+  --color-pastel-blue: #bbdefb;
+  --color-pastel-green: #c8e6c9;
+  --color-pastel-purple: #e1bee7;
+  --color-pastel-orange: #ffe0b2;
+  --color-surface-base: #1a1a2e;
+  --color-surface-elevated: #232340;
+  --color-surface-overlay: #2a2a4a;
+  --color-surface-border: #3a3a5c;
+}
+
+/* Sticky note rotation variations */
+.sticky-note-1 { transform: rotate(-2deg); }
+.sticky-note-2 { transform: rotate(1deg); }
+.sticky-note-3 { transform: rotate(-1deg); }
+.sticky-note-4 { transform: rotate(2deg); }
+.sticky-note-5 { transform: rotate(-0.5deg); }
+.sticky-note-6 { transform: rotate(1.5deg); }
+
+/* Card shadow for depth effect */
+.card-shadow {
+  box-shadow:
+    3px 3px 5px rgba(0, 0, 0, 0.1),
+    6px 6px 10px rgba(0, 0, 0, 0.05);
+}
+
+:where(.dark, .dark *) .card-shadow {
+  box-shadow:
+    3px 3px 8px rgba(0, 0, 0, 0.3),
+    6px 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* Hover effect for sticky notes */
+.sticky-note {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0s;
+}
+
+.sticky-note:hover {
+  transform: rotate(0deg) scale(1.02) !important;
+  box-shadow:
+    5px 5px 8px rgba(0, 0, 0, 0.15),
+    10px 10px 15px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+:where(.dark, .dark *) .sticky-note:hover {
+  box-shadow:
+    5px 5px 12px rgba(0, 0, 0, 0.4),
+    10px 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Prose styling for content pages */
+.prose code:not(pre code) {
+  background-color: #f1f5f9;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+:where(.dark, .dark *) .prose code:not(pre code) {
+  background-color: #2a2a4a;
+  color: #e2e8f0;
+}
+
+.prose pre {
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Search input styling */
+.search-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Tag badge hover */
+.tag-badge {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.tag-badge:hover {
+  transform: translateY(-1px);
+}
+
+/* Dark scrollbar */
+:where(.dark, .dark *) {
+  scrollbar-color: #3a3a5c #1a1a2e;
+}
+
+/* Selection color in dark mode */
+:where(.dark, .dark *) ::selection {
+  background-color: rgba(96, 165, 250, 0.3);
+}
+
+/* Theme transition utility */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}

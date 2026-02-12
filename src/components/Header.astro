@@ -1,0 +1,47 @@
+---
+import { buildUrl } from "../utils/url";
+import ThemeToggle from "./ThemeToggle.astro";
+
+const navLinks = [
+  { href: buildUrl("/ai-stories"), label: "AI stories" },
+  { href: buildUrl("/tags"), label: "Tags" },
+];
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "");
+---
+
+<header class="bg-white dark:bg-surface-elevated border-b border-gray-200 dark:border-surface-border sticky top-0 z-50">
+  <div class="container mx-auto px-4">
+    <nav class="flex items-center justify-between h-16">
+      <a href={buildUrl("/ai-stories")} class="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+        <span class="text-2xl"></span>
+        <span>AI Stories</span>
+      </a>
+
+      <div class="flex items-center gap-6">
+        <ul class="flex items-center gap-6">
+          {navLinks.map((link) => {
+            const linkPath = link.href.replace(/\/$/, "");
+            const isActive = currentPath === linkPath || currentPath.startsWith(linkPath + "/");
+            return (
+              <li>
+                <a
+                  href={link.href}
+                  class:list={[
+                    "text-sm font-medium transition-colors",
+                    isActive
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
+                  ]}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <ThemeToggle />
+      </div>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,70 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Card from "../../components/Card.astro";
+import CardGrid from "../../components/CardGrid.astro";
+import { getAllTags, getEntriesByTag, getTagCounts } from "../../utils/tagUtils";
+import { buildUrl } from "../../utils/url";
+
+export async function getStaticPaths() {
+  const allTags = await getAllTags();
+
+  return allTags.map((tag) => ({
+    params: { tag },
+  }));
+}
+
+const { tag } = Astro.params;
+const entries = await getEntriesByTag(tag!);
+
+// Use global tag counts so colors are consistent across pages
+const globalTagCounts = await getTagCounts();
+const tagCounts = Object.fromEntries(globalTagCounts);
+
+// Sort entries by created date (newest first)
+const sortedEntries = [...entries].sort(
+  (a, b) => b.data.created.getTime() - a.data.created.getTime()
+);
+---
+
+<BaseLayout title={`Tag: ${tag}`}>
+  <div class="container mx-auto px-4 py-8">
+    <header class="mb-8">
+      <a
+        href={buildUrl("/tags")}
+        class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline mb-4 inline-flex items-center gap-1 text-sm"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        All Tags
+      </a>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
+        Tag: <span class="text-blue-600 dark:text-blue-400">{tag}</span>
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">
+        {sortedEntries.length} {sortedEntries.length === 1 ? "item" : "items"} with this tag
+      </p>
+    </header>
+
+    {sortedEntries.length > 0 ? (
+      <CardGrid>
+        {sortedEntries.map((entry, index) => (
+          <Card
+            title={entry.data.title}
+            slug={entry.id}
+            tags={entry.data.tags}
+            icon={entry.data.icon || "📝"}
+            created={entry.data.created}
+            description={entry.data.description}
+            colorIndex={index}
+            tagCounts={tagCounts}
+          />
+        ))}
+      </CardGrid>
+    ) : (
+      <p class="text-gray-500 dark:text-gray-400 text-center py-12">
+        No items found with this tag.
+      </p>
+    )}
+  </div>
+</BaseLayout>

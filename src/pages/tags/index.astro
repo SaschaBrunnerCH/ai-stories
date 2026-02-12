@@ -1,0 +1,48 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import TagBadge from "../../components/TagBadge.astro";
+import { getAllTags, getTagCounts } from "../../utils/tagUtils";
+import { buildUrl } from "../../utils/url";
+
+const allTags = await getAllTags();
+const tagCounts = await getTagCounts();
+
+// Sort tags by count (most used first)
+const sortedTags = [...allTags].sort(
+  (a, b) => (tagCounts.get(b) || 0) - (tagCounts.get(a) || 0)
+);
+---
+
+<BaseLayout title="All Tags">
+  <div class="container mx-auto px-4 py-8">
+    <header class="mb-8">
+      <a
+        href={buildUrl("/")}
+        class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline mb-4 inline-flex items-center gap-1 text-sm"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Home
+      </a>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">All Tags</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">
+        Browse content by topic. Click a tag to see all related items.
+      </p>
+    </header>
+
+    <div class="flex flex-wrap gap-3">
+      {sortedTags.map((tag) => (
+        <a href={buildUrl(`/tags/${tag}`)}>
+          <TagBadge tag={tag} count={tagCounts.get(tag)} tagCount={tagCounts.get(tag)} size="large" />
+        </a>
+      ))}
+    </div>
+
+    {allTags.length === 0 && (
+      <p class="text-gray-500 dark:text-gray-400 text-center py-12">
+        No tags found. Add some content to get started!
+      </p>
+    )}
+  </div>
+</BaseLayout>

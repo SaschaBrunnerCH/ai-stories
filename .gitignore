@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Production build output (Astro/Vite)
+dist/
+
+# Astro generated types and cache
+.astro/
+
+# Vite cache (varies by version/config)
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing / coverage
+coverage/
+
+# ESLint cache
+.eslintcache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs/editors (project-level VS Code settings are usually committed)
+.idea/
+
+# Generated content asset copies (source of truth lives in content/)
+public/ai-stories/

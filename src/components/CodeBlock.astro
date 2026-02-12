@@ -1,0 +1,54 @@
+---
+import { Code } from "astro:components";
+
+interface Props {
+  filename: string;
+  code: string;
+  language: string;
+}
+
+const { filename, code, language } = Astro.props;
+---
+
+<div class="code-block-wrapper my-6 rounded-lg overflow-hidden border border-gray-700 bg-gray-900">
+  <div class="code-header bg-gray-800 px-4 py-2 flex justify-between items-center border-b border-gray-700">
+    <span class="text-sm text-gray-300 font-mono">{filename}</span>
+    <button
+      type="button"
+      class="copy-btn text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"
+    >
+      Copy
+    </button>
+  </div>
+  <div class="code-content overflow-x-auto">
+    <Code code={code} lang={language} theme="github-dark" />
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const button = e.currentTarget;
+      const wrapper = button.closest(".code-block-wrapper");
+      const pre = wrapper && wrapper.querySelector(".code-content pre");
+      const text = pre ? pre.textContent : "";
+
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        const originalText = button.textContent;
+        button.textContent = "Copied!";
+        button.classList.add("text-green-400");
+
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.classList.remove("text-green-400");
+        }, 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    });
+  });
+</script>

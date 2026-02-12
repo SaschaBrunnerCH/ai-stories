@@ -1,0 +1,37 @@
+---
+import { getTagColor } from "../utils/tagUtils";
+
+interface Props {
+  tag: string;
+  count?: number;        // Display count badge
+  tagCount?: number;     // Frequency count for color (grey if <= 2)
+  size?: "small" | "medium" | "large";
+  interactive?: boolean;
+}
+
+const { tag, count, tagCount, size = "medium", interactive = true } = Astro.props;
+
+const colorClass = getTagColor(tag, tagCount);
+
+const sizeClasses = {
+  small: "text-xs px-2 py-0.5",
+  medium: "text-sm px-3 py-1",
+  large: "text-base px-4 py-1.5",
+};
+---
+
+<span
+  class:list={[
+    "tag-badge inline-flex items-center gap-1.5 rounded-full font-medium",
+    colorClass,
+    sizeClasses[size],
+    interactive && "hover:brightness-95 cursor-pointer",
+  ]}
+>
+  {tag}
+  {count !== undefined && (
+    <span class="bg-black/10 dark:bg-white/15 rounded-full px-1.5 text-xs font-semibold">
+      {count}
+    </span>
+  )}
+</span>
